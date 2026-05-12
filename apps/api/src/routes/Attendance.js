@@ -9,7 +9,7 @@ router.get('/', authMiddleware, async (req, res) => {
     try {
         connection = await connectDB();
         const result = await connection.execute(
-            'SELECT id, employee_id, check_in, check_out, date_attendace, created_at FROM attendance ORDER BY id DESC'
+            'SELECT id, employee_id, check_in, check_out, date_attendance, created_at FROM attendance ORDER BY id DESC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -22,11 +22,13 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 router.post('/', authMiddleware, async (req, res) => {
-    const { employee_id, check_in, check_out, date_attendace } = req.body;
-    const attendanceDate = new Date(date_attendace);
-
-    if (employee_id == null || !date_attendace) {
-        return res.status(400).json({ error: 'employee_id and date_attendace are required' });
+    const { employee_id, check_in, check_out, date_attendance } = req.body;
+    const attendanceDate = new Date(date_attendance);
+    console.log(employee_id,"ini employee");
+    console.log(date_attendance);
+    
+    if (employee_id == null || !date_attendance) {
+        return res.status(400).json({ error: 'employee_id and date_attendance are required' });
     }
 
     if (Number.isNaN(attendanceDate.getTime())) {
@@ -37,14 +39,14 @@ router.post('/', authMiddleware, async (req, res) => {
     try {
         connection = await connectDB();
         const result = await connection.execute(
-            `INSERT INTO attendance (employee_id, check_in, check_out, date_attendace, created_at)
-             VALUES (:employee_id, :check_in, :check_out, :date_attendace, CURRENT_TIMESTAMP)
+            `INSERT INTO attendance (employee_id, check_in, check_out, date_attendance, created_at)
+             VALUES (:employee_id, :check_in, :check_out, :date_attendance, CURRENT_TIMESTAMP)
              RETURNING id INTO :id`,
             {
                 employee_id,
                 check_in: check_in ? new Date(check_in) : null,
                 check_out: check_out ? new Date(check_out) : null,
-                date_attendace: attendanceDate,
+                date_attendance: attendanceDate,
                 id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
             },
             { autoCommit: false }
@@ -69,15 +71,15 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.put('/:id', authMiddleware, async (req, res) => {
     const attendanceId = Number(req.params.id);
-    const { employee_id, check_in, check_out, date_attendace } = req.body;
-    const attendanceDate = date_attendace ? new Date(date_attendace) : null;
+    const { employee_id, check_in, check_out, date_attendance } = req.body;
+    const attendanceDate = date_attendance ? new Date(date_attendance) : null;
 
     if (!attendanceId) {
         return res.status(400).json({ error: 'Valid attendance id is required' });
     }
 
-    if (date_attendace && Number.isNaN(attendanceDate.getTime())) {
-        return res.status(400).json({ error: 'date_attendace must be a valid date' });
+    if (date_attendance && Number.isNaN(attendanceDate.getTime())) {
+        return res.status(400).json({ error: 'date_attendance must be a valid date' });
     }
 
     let connection;
@@ -88,14 +90,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
              SET employee_id = NVL(:employee_id, employee_id),
                  check_in = NVL(:check_in, check_in),
                  check_out = NVL(:check_out, check_out),
-                 date_attendace = NVL(:date_attendace, date_attendace)
+                 date_attendance = NVL(:date_attendance, date_attendance)
              WHERE id = :id`,
             {
                 id: attendanceId,
                 employee_id: employee_id ?? null,
                 check_in: check_in ? new Date(check_in) : null,
                 check_out: check_out ? new Date(check_out) : null,
-                date_attendace: attendanceDate
+                date_attendance: attendanceDate
             },
             { autoCommit: false }
         );

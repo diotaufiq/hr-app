@@ -5,7 +5,7 @@ require('dotenv').config({
     path: path.resolve(__dirname, '..', '.env')
 });
 
-async function createAttendanceTable() {
+async function createEmployeesTable() {
     let connection;
     try {
         connection = await oracledb.getConnection({
@@ -17,53 +17,55 @@ async function createAttendanceTable() {
 
         // Drop table if exists
         try {
-            await connection.execute('DROP TABLE attendance');
-            console.log('Existing attendance table dropped');
+            await connection.execute('DROP TABLE employees PURGE');
+            console.log('Existing employees table dropped');
         } catch (err) {
-            // Table doesn't exist, continue
+            // Table might not exist, continue
         }
 
+        // Create table
         const createTableQuery = `
-            CREATE TABLE attendance (
+            CREATE TABLE employees (
                 id NUMBER PRIMARY KEY,
-                employee_id NUMBER NOT NULL,
-                check_in TIMESTAMP,
-                check_out TIMESTAMP,
-                date_attendance DATE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                user_id NUMBER,
+                position VARCHAR2(100),
+                department VARCHAR2(100),
+                status VARCHAR2(20),
+                join_date DATE
             )
         `;
 
         await connection.execute(createTableQuery);
-        
-        // Create sequence for ID auto-increment
+        console.log('Table employees created');
+
+        // Create sequence for id
         try {
-            await connection.execute('CREATE SEQUENCE attendance_seq START WITH 1 INCREMENT BY 1');
-            console.log('Sequence attendance_seq created');
+            await connection.execute('CREATE SEQUENCE employees_seq START WITH 1 INCREMENT BY 1 NOCACHE');
+            console.log('Sequence employees_seq created');
         } catch (err) {
-            // Sequence might already exist
+            // sequence may already exist
         }
-        
-        // Create trigger for auto-increment
+
+        // Create trigger for auto-increment id
         try {
             await connection.execute(`
-                CREATE OR REPLACE TRIGGER attendance_bi
-                BEFORE INSERT ON attendance
+                CREATE OR REPLACE TRIGGER employees_bi
+                BEFORE INSERT ON employees
                 FOR EACH ROW
                 BEGIN
                   IF :new.id IS NULL THEN
-                    SELECT attendance_seq.NEXTVAL INTO :new.id FROM dual;
+                    SELECT employees_seq.NEXTVAL INTO :new.id FROM dual;
                   END IF;
                 END;
             `);
-            console.log('Trigger attendance_bi created');
+            console.log('Trigger employees_bi created');
         } catch (err) {
-            // Trigger might already exist
+            // trigger may already exist
         }
-        
-        console.log('Table attendance created successfully');
+
+        console.log('Migration for employees completed successfully');
     } catch (error) {
-        console.error('Error creating attendance table:', error);
+        console.error('Error creating employees table:', error);
     } finally {
         if (connection) {
             try {
@@ -76,4 +78,4 @@ async function createAttendanceTable() {
     }
 }
 
-createAttendanceTable();
+createEmployeesTable();
