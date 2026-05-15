@@ -22,29 +22,42 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 router.post('/', authMiddleware, async (req, res) => {
-    const { employee_id, check_in, check_out, date_attendance } = req.body;
+    const { check_out, date_attendance } = req.body || {};
     const attendanceDate = new Date(date_attendance);
-    console.log(employee_id,"ini employee");
-    console.log(date_attendance);
+    const checkInTime = new Date(); // Capture current server time for check_in
+    const userId = req.user.id; // Get user ID from JWT token
     
-    if (employee_id == null || !date_attendance) {
-        return res.status(400).json({ error: 'employee_id and date_attendance are required' });
+    if (!date_attendance) {
+        return res.status(400).json({ error: 'date_attendance is required' });
     }
 
     if (Number.isNaN(attendanceDate.getTime())) {
-        return res.status(400).json({ error: 'date_attendace must be a valid date' });
+        return res.status(400).json({ error: 'date_attendance must be a valid date' });
     }
 
     let connection;
     try {
         connection = await connectDB();
+        
+        // Fetch employee_id from employees table using user_id from JWT
+        const empResult = await connection.execute(
+            'SELECT id FROM employees WHERE user_id = :user_id',
+            { user_id: userId }
+        );
+        
+        if (empResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee record not found for this user' });
+        }
+        
+        const employeeId = empResult.rows[0][0];
+        
         const result = await connection.execute(
             `INSERT INTO attendance (employee_id, check_in, check_out, date_attendance, created_at)
              VALUES (:employee_id, :check_in, :check_out, :date_attendance, CURRENT_TIMESTAMP)
              RETURNING id INTO :id`,
             {
-                employee_id,
-                check_in: check_in ? new Date(check_in) : null,
+                employee_id: employeeId,
+                check_in: checkInTime,
                 check_out: check_out ? new Date(check_out) : null,
                 date_attendance: attendanceDate,
                 id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
@@ -71,8 +84,10 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.put('/:id', authMiddleware, async (req, res) => {
     const attendanceId = Number(req.params.id);
-    const { employee_id, check_in, check_out, date_attendance } = req.body;
+    const { check_in, check_out, date_attendance } = req.body || {};
     const attendanceDate = date_attendance ? new Date(date_attendance) : null;
+    const checkOutTime = check_out ? new Date(check_out) : new Date(); // Auto-fill with current time if not provided
+    const userId = req.user.id; // Get user ID from JWT token
 
     if (!attendanceId) {
         return res.status(400).json({ error: 'Valid attendance id is required' });
@@ -85,18 +100,30 @@ router.put('/:id', authMiddleware, async (req, res) => {
     let connection;
     try {
         connection = await connectDB();
+        
+        // Fetch employee_id from employees table using user_id from JWT
+        const empResult = await connection.execute(
+            'SELECT id FROM employees WHERE user_id = :user_id',
+            { user_id: userId }
+        );
+        
+        if (empResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee record not found for this user' });
+        }
+        
+        const employeeId = empResult.rows[0][0];
+        
         const result = await connection.execute(
             `UPDATE attendance
-             SET employee_id = NVL(:employee_id, employee_id),
-                 check_in = NVL(:check_in, check_in),
+             SET check_in = NVL(:check_in, check_in),
                  check_out = NVL(:check_out, check_out),
                  date_attendance = NVL(:date_attendance, date_attendance)
-             WHERE id = :id`,
+             WHERE id = :id AND employee_id = :employee_id`,
             {
                 id: attendanceId,
-                employee_id: employee_id ?? null,
+                employee_id: employeeId,
                 check_in: check_in ? new Date(check_in) : null,
-                check_out: check_out ? new Date(check_out) : null,
+                check_out: checkOutTime,
                 date_attendance: attendanceDate
             },
             { autoCommit: false }
