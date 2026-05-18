@@ -1,4 +1,4 @@
-# Attendance Feature Documentation
+# attendance Feature Documentation
 
 ## Overview
 The attendance feature provides API endpoints to record, view, and update employee attendance data in the Oracle database.
@@ -44,7 +44,7 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-### 2. Create Attendance
+### 2. Create attendance
 **Endpoint:** `POST /api/attendance`
 
 **Description:** Insert a new attendance record.
@@ -68,7 +68,7 @@ Content-Type: application/json
 **Response (201 Created):**
 ```json
 {
-  "message": "Attendance created successfully",
+  "message": "attendance created successfully",
   "id": 1
 }
 ```
@@ -82,7 +82,7 @@ Content-Type: application/json
 
 ---
 
-### 3. Update Attendance
+### 3. Update attendance
 **Endpoint:** `PUT /api/attendance/:id`
 
 **Description:** Update an attendance record by id.
@@ -106,14 +106,14 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-  "message": "Attendance updated successfully"
+  "message": "attendance updated successfully"
 }
 ```
 
 **Error Response (404 Not Found):**
 ```json
 {
-  "error": "Attendance not found"
+  "error": "attendance not found"
 }
 ```
 
@@ -136,13 +136,13 @@ Content-Type: application/json
 
 ## Testing with cURL
 
-**Get Attendance:**
+**Get attendance:**
 ```bash
 curl -X GET http://localhost:3000/api/attendance \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-**Create Attendance:**
+**Create attendance:**
 ```bash
 curl -X POST http://localhost:3000/api/attendance \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -150,7 +150,7 @@ curl -X POST http://localhost:3000/api/attendance \
   -d '{"employee_id":101,"check_in":"2026-05-11T08:00:00.000Z","check_out":"2026-05-11T17:00:00.000Z","date_attendace":"2026-05-11"}'
 ```
 
-**Update Attendance:**
+**Update attendance:**
 ```bash
 curl -X PUT http://localhost:3000/api/attendance/1 \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
